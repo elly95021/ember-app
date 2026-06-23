@@ -159,7 +159,7 @@
 <body>
     <div class="chat-container">
         <div class="header">
-            <h1>Ember</h1>
+            <h1>Screening Support Chat</h1>
             <p>Screening Support Chat</p>
         </div>
         
@@ -182,9 +182,27 @@
         const messagesDiv = document.getElementById('messages');
         const userInput = document.getElementById('userInput');
         const sendBtn = document.getElementById('sendBtn');
+
+        const group = getQueryParam('group');
+        const pid = getQueryParam('pid') || '';
+        const validGroups = ['ember', 'info'];
+        const isValidGroup = validGroups.includes(group);
+        const sessionId = generateSessionId();
+        const sessionStart = new Date().toISOString();
         let conversation = [];
 
-        function addMessage(role, text) {
+        function getQueryParam(name) {
+            return new URLSearchParams(window.location.search).get(name);
+        }
+
+        function generateSessionId() {
+            if (window.crypto?.randomUUID) {
+                return window.crypto.randomUUID();
+            }
+            return 's-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+        }
+
+        function addMessage(role, text, timestamp = new Date().toISOString(), includeInConversation = true) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${role}`;
             
@@ -196,10 +214,8 @@
             messagesDiv.appendChild(messageDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-            if (role === 'assistant') {
-                conversation.push({ role: 'assistant', content: text });
-            } else {
-                conversation.push({ role: 'user', content: text });
+            if (includeInConversation) {
+                conversation.push({ role, content: text, timestamp });
             }
         }
 
@@ -225,6 +241,8 @@
         }
 
         async function sendMessage() {
+            if (!isValidGroup) return;
+
             const message = userInput.value.trim();
             if (!message) return;
 
@@ -238,17 +256,24 @@
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message, conversation })
+                    body: JSON.stringify({
+                        message,
+                        conversation,
+                        group,
+                        pid,
+                        sessionId,
+                        sessionStart
+                    })
                 });
 
                 removeLoadingMessage();
 
                 if (!response.ok) {
-                    const error = await response.json();
+                    const error = await response.json().catch(() => ({ error: 'Something went wrong' }));
                     addMessage('assistant', `Error: ${error.error || 'Something went wrong'}`);
                 } else {
                     const data = await response.json();
-                    addMessage('assistant', data.reply);
+                    addMessage('assistant', data.reply, data.timestamp || new Date().toISOString());
                 }
             } catch (error) {
                 removeLoadingMessage();
@@ -259,6 +284,17 @@
             }
         }
 
+        function showInvalidGroupMessage() {
+            addMessage(
+                'assistant',
+                'Please open this app from your study invitation link with the correct group assignment.',
+                undefined,
+                false
+            );
+            userInput.disabled = true;
+            sendBtn.disabled = true;
+        }
+
         sendBtn.addEventListener('click', sendMessage);
         userInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -267,9 +303,17 @@
             }
         });
 
-        // Welcome message
-        addMessage('assistant', "Hi. I'm Ember. I'm here to help you think through any worries you have about breast screening. What's on your mind?");
-        userInput.focus();
+        if (!isValidGroup) {
+            showInvalidGroupMessage();
+        } else {
+            addMessage(
+                'assistant',
+                'Hi. I can help you with breast screening questions. What would you like to know?',
+                undefined,
+                false
+            );
+            userInput.focus();
+        }
     </script>
 </body>
 </html>
