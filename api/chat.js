@@ -125,7 +125,12 @@ research team using the details in your information sheet."
 Do not add anything to this message or continue the task afterwards.
 
 # Output language
-Respond in English.`;
+Respond in English.
+
+# Internal marker instructions
+When you reach the committed action step and offer the four fixed options, append the text [COMMITTED_ACTION] after your visible reply.
+When you reach the final closing step, append the text [SESSION_END] after your visible reply.
+Do not include these markers in what the user sees.`;
 
 const emberPrompt = `# Role
 You are Ember, a warm and empathetic companion who helps women work through fear
@@ -281,7 +286,12 @@ research team using the details in your information sheet."
 Do not add anything to this message or continue the task afterwards.
 
 # Output language
-Respond in English.`;
+Respond in English.
+
+# Internal marker instructions
+When you reach the committed action step and offer the four fixed options, append the text [COMMITTED_ACTION] after your visible reply.
+When you reach the final closing step, append the text [SESSION_END] after your visible reply.
+Do not include these markers in what the user sees.`;
 
 const SUPABASE_TABLE = 'session_logs';
 
@@ -391,9 +401,17 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     const rawReply = data?.completion ?? data?.content?.[0]?.text ?? data?.response?.output_text ?? data?.message?.content?.text;
-    const reply = typeof rawReply === 'string' && rawReply.trim().length > 0
+    const replyWithMarkers = typeof rawReply === 'string' && rawReply.trim().length > 0
       ? rawReply.trim()
       : 'Sorry, I could not generate a response.';
+    const committedActionMarker = '[COMMITTED_ACTION]';
+    const sessionEndMarker = '[SESSION_END]';
+    const hasCommittedAction = replyWithMarkers.includes(committedActionMarker);
+    const hasSessionEnd = replyWithMarkers.includes(sessionEndMarker);
+    const reply = replyWithMarkers
+      .replace(committedActionMarker, '')
+      .replace(sessionEndMarker, '')
+      .trim();
     const endTime = new Date().toISOString();
     const sessionIdToSave = sessionId || `session-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
     const startTimeToSave = sessionStart || endTime;
@@ -410,7 +428,12 @@ export default async function handler(req, res) {
       messages: messagesToSave
     });
 
-    return res.status(200).json({ reply, timestamp: endTime });
+    return res.status(200).json({
+      reply,
+      timestamp: endTime,
+      committedAction: hasCommittedAction,
+      sessionEnd: hasSessionEnd
+    });
   } catch (error) {
     console.error('Error:', error);
     return res.status(500).json({ error: error.message || 'Internal server error' });
