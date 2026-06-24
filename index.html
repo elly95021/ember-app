@@ -52,20 +52,10 @@
             padding: 24px 16px 24px;
             overflow: auto;
             -webkit-overflow-scrolling: touch;
-            opacity: 0;
-            transform: translateY(6px);
-            transition: opacity 300ms ease, transform 300ms ease;
         }
 
-        /* When visible, element is displayed (so transitions can run) */
-        .screen.visible {
+        .screen.active {
             display: block;
-        }
-
-        /* When shown (after display:block), animate to visible */
-        .screen.show {
-            opacity: 1;
-            transform: translateY(0);
         }
 
         .top-star {
@@ -441,36 +431,14 @@
             return 's-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
         }
 
-        const SCREEN_TRANSITION_MS = 300;
-
-        async function setActiveScreen(screen) {
-            if (!screen) return;
-            const allScreens = [welcomeScreen, entryScreen, chatScreen, endingScreen, invalidScreen];
-            const current = allScreens.find(s => s.classList.contains('active'));
-            if (current === screen) return;
-
-            // If there's a current screen, animate it out first
-            if (current) {
-                current.classList.remove('show');
-                current.classList.add('hiding');
-                current.classList.remove('active');
-                await new Promise(r => setTimeout(r, SCREEN_TRANSITION_MS));
-                current.classList.remove('hiding', 'visible');
-                current.style.display = 'none';
+        function setActiveScreen(screen) {
+            [welcomeScreen, entryScreen, chatScreen, endingScreen, invalidScreen].forEach((el) => {
+                el.classList.remove('active');
+            });
+            if (screen) {
+                screen.style.display = '';
+                screen.classList.add('active');
             }
-
-            // Prepare and show the new screen
-            const targetDisplay = screen.dataset.display || 'block';
-            screen.style.display = targetDisplay;
-            // ensure it's in the layout so transitions can run
-            screen.classList.add('visible');
-            // force reflow before starting transition
-            void screen.offsetWidth;
-            screen.classList.add('show');
-            screen.classList.add('active');
-            await new Promise(r => setTimeout(r, SCREEN_TRANSITION_MS));
-            // leave 'visible' and 'active' on the screen; remove 'show' so state is clean
-            screen.classList.remove('show');
         }
 
         function buildEntryCards() {
