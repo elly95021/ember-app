@@ -803,6 +803,7 @@
 
         async function sendChatMessage(message) {
             if (!message || awaitingResponse) return;
+            clearActionButtons();
             awaitingResponse = true;
             chatSendBtn.disabled = true;
             entrySendBtn.disabled = true;
