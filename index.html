@@ -366,18 +366,32 @@
         .action-buttons {
             display: none;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
             width: 100%;
             margin: 0 0 12px;
             padding: 0;
-            max-height: min(220px, 35vh);
-            overflow-y: auto;
-            overscroll-behavior: contain;
             flex-shrink: 0;
+            overflow: visible;
         }
 
         .action-buttons.visible {
             display: flex;
+        }
+
+        .option-track {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scroll-snap-type: x mandatory;
+            padding: 2px 2px 8px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .option-track::-webkit-scrollbar {
+            display: none;
         }
 
         .action-button {
@@ -388,6 +402,37 @@
             font-size: 0.95rem;
             line-height: 1.35;
             flex-shrink: 0;
+        }
+
+        .action-option {
+            flex: 0 0 100%;
+            min-width: 100%;
+            min-height: 72px;
+            padding: 14px 16px;
+            scroll-snap-align: start;
+            text-align: left;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .option-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.78rem;
+            color: #8f7d6d;
+            padding: 0 2px;
+        }
+
+        .option-indicator {
+            font-weight: 600;
+            color: #8c5b3f;
+        }
+
+        .option-hint {
+            opacity: 0.78;
+            white-space: nowrap;
         }
 
         .secondary-action-button {
@@ -663,17 +708,69 @@
         function renderCommittedActionButtons() {
             actionButtons.innerHTML = '';
             actionButtons.classList.add('visible');
+
+            const track = document.createElement('div');
+            track.className = 'option-track';
+
+            const meta = document.createElement('div');
+            meta.className = 'option-meta';
+            const indicator = document.createElement('span');
+            indicator.className = 'option-indicator';
+            indicator.textContent = `1/${committedActionOptions.length}`;
+            const hint = document.createElement('span');
+            hint.className = 'option-hint';
+            hint.textContent = 'Swipe for more →';
+            meta.appendChild(indicator);
+            meta.appendChild(hint);
+
             committedActionOptions.forEach((option) => {
                 const button = document.createElement('button');
                 button.type = 'button';
-                button.className = 'action-button';
+                button.className = 'action-button action-option';
                 button.textContent = option;
                 button.addEventListener('click', () => {
                     clearActionButtons();
                     sendChatMessage(option);
                 });
-                actionButtons.appendChild(button);
+                track.appendChild(button);
             });
+
+            actionButtons.appendChild(track);
+            actionButtons.appendChild(meta);
+
+            const updateIndicator = () => {
+                const buttons = Array.from(track.querySelectorAll('.action-option'));
+                if (!buttons.length) return;
+                const cardWidth = track.clientWidth || 1;
+                let index = Math.round(track.scrollLeft / cardWidth);
+                index = Math.max(0, Math.min(buttons.length - 1, index));
+                indicator.textContent = `${index + 1}/${buttons.length}`;
+                hint.textContent = index < buttons.length - 1 ? 'Swipe for more →' : 'Swipe back ←';
+            };
+
+            track.addEventListener('scroll', () => {
+                window.requestAnimationFrame(updateIndicator);
+            }, { passive: true });
+
+            let touchStartX = 0;
+            track.addEventListener('touchstart', (event) => {
+                touchStartX = event.touches[0].clientX;
+            }, { passive: true });
+            track.addEventListener('touchend', (event) => {
+                const deltaX = event.changedTouches[0].clientX - touchStartX;
+                const buttons = Array.from(track.querySelectorAll('.action-option'));
+                if (!buttons.length) return;
+                if (deltaX < -40) {
+                    const nextIndex = Math.min(buttons.length - 1, Math.round(track.scrollLeft / (track.clientWidth || 1)) + 1);
+                    buttons[nextIndex].scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+                } else if (deltaX > 40) {
+                    const prevIndex = Math.max(0, Math.round(track.scrollLeft / (track.clientWidth || 1)) - 1);
+                    buttons[prevIndex].scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+                }
+                window.requestAnimationFrame(updateIndicator);
+            }, { passive: true });
+
+            window.requestAnimationFrame(updateIndicator);
         }
 
         function openEndConfirmation() {
