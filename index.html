@@ -308,6 +308,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            position: relative;
         }
 
         .screen.active#chatScreen {
@@ -365,15 +366,19 @@
             position: fixed;
             left: 50%;
             transform: translateX(-50%);
-            bottom: calc(24px + 52px + 12px + env(safe-area-inset-bottom));
+            bottom: calc(24px + 76px + 12px + env(safe-area-inset-bottom));
             width: calc(100vw - 48px);
             max-width: 432px;
-            display: flex;
+            display: none;
             flex-direction: column;
             gap: 10px;
-            z-index: 21;
             margin: 0;
+            padding: 0;
             pointer-events: auto;
+            z-index: 21;
+            max-height: min(220px, calc(100dvh - 260px));
+            overflow-y: auto;
+            overscroll-behavior: contain;
         }
 
         .action-buttons.visible {
@@ -387,6 +392,7 @@
             border-radius: 999px;
             font-size: 0.95rem;
             line-height: 1.35;
+            flex-shrink: 0;
         }
 
         .screen h1 {
@@ -437,7 +443,7 @@
             <div class="ending-copy">
                 <h1>Thank you for talking with me today.</h1>
                 <p>Whatever you're feeling right now is completely valid.</p>
-                <p>Remember — taking care of yourself is an act of courage, no matter how small the step.</p>
+                <p>Remember, taking care of yourself is an act of courage, no matter how small the step.</p>
                 <p>Take care of yourself.</p>
             </div>
         </main>
@@ -576,11 +582,25 @@
                 button.className = 'action-button';
                 button.textContent = option;
                 button.addEventListener('click', () => {
+                    clearActionButtons();
                     sendChatMessage(option);
-                    actionButtons.classList.remove('visible');
                 });
                 actionButtons.appendChild(button);
             });
+        }
+
+        function renderEndButton() {
+            actionButtons.innerHTML = '';
+            actionButtons.classList.add('visible');
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'action-button';
+            button.textContent = 'End';
+            button.addEventListener('click', () => {
+                clearActionButtons();
+                setActiveScreen(endingScreen);
+            });
+            actionButtons.appendChild(button);
         }
 
         function clearActionButtons() {
@@ -624,15 +644,12 @@
                 } else {
                     const data = await response.json();
                     addMessage('assistant', data.reply, data.timestamp || new Date().toISOString());
-                    if (data.committedAction) {
+                    if (data.sessionEnd) {
+                        renderEndButton();
+                    } else if (data.committedAction) {
                         renderCommittedActionButtons();
                     } else {
                         clearActionButtons();
-                    }
-                    if (data.sessionEnd) {
-                        setTimeout(() => {
-                            setActiveScreen(endingScreen);
-                        }, 1000);
                     }
                 }
             } catch (error) {
