@@ -390,6 +390,84 @@
             flex-shrink: 0;
         }
 
+        .secondary-action-button {
+            align-self: center;
+            width: fit-content;
+            padding: 10px 16px;
+            min-height: auto;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            line-height: 1.2;
+            color: #b44e2d;
+            background: #fbe9db;
+            border: 1px solid rgba(180, 78, 45, 0.22);
+            box-shadow: none;
+        }
+
+        .secondary-action-button:hover {
+            transform: translateY(-1px);
+            border-color: rgba(180, 78, 45, 0.4);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(31, 31, 31, 0.42);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            z-index: 1000;
+        }
+
+        .modal-overlay.visible {
+            display: flex;
+        }
+
+        .modal-card {
+            width: min(100%, 360px);
+            background: #fffdf8;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 20px 50px rgba(31, 31, 31, 0.18);
+            text-align: center;
+        }
+
+        .modal-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 10px;
+        }
+
+        .modal-card p {
+            color: #5e5e5e;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .modal-btn {
+            border: none;
+            border-radius: 999px;
+            padding: 10px 16px;
+            font: inherit;
+            cursor: pointer;
+        }
+
+        .modal-btn.secondary {
+            background: #f3eee7;
+            color: #4d4d4d;
+        }
+
+        .modal-btn.primary {
+            background: linear-gradient(90deg, #BB4321 0%, #F9ECA5 100%);
+            color: white;
+        }
+
         .screen h1 {
             margin-bottom: 16px;
         }
@@ -452,6 +530,17 @@
         </main>
     </div>
 
+    <div class="modal-overlay" id="endConfirmModal" aria-hidden="true">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="endConfirmTitle">
+            <h3 id="endConfirmTitle">End conversation?</h3>
+            <p>Are you sure you want to end the conversation?</p>
+            <div class="modal-actions">
+                <button type="button" class="modal-btn secondary" id="cancelEndBtn">Cancel</button>
+                <button type="button" class="modal-btn primary" id="confirmEndBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const validGroups = ['ember', 'info'];
         const group = getQueryParam('group');
@@ -475,6 +564,9 @@
         const messagesDiv = document.getElementById('messages');
         const actionButtons = document.getElementById('actionButtons');
         const startBtn = document.getElementById('startBtn');
+        const endConfirmModal = document.getElementById('endConfirmModal');
+        const cancelEndBtn = document.getElementById('cancelEndBtn');
+        const confirmEndBtn = document.getElementById('confirmEndBtn');
 
         const cards = [
             {
@@ -584,16 +676,25 @@
             });
         }
 
+        function openEndConfirmation() {
+            endConfirmModal.classList.add('visible');
+            endConfirmModal.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeEndConfirmation() {
+            endConfirmModal.classList.remove('visible');
+            endConfirmModal.setAttribute('aria-hidden', 'true');
+        }
+
         function renderEndButton() {
             actionButtons.innerHTML = '';
             actionButtons.classList.add('visible');
             const button = document.createElement('button');
             button.type = 'button';
-            button.className = 'action-button';
-            button.textContent = 'End';
+            button.className = 'secondary-action-button';
+            button.textContent = 'End the conversation';
             button.addEventListener('click', () => {
-                clearActionButtons();
-                setActiveScreen(endingScreen);
+                openEndConfirmation();
             });
             actionButtons.appendChild(button);
         }
@@ -689,6 +790,17 @@
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 chatSendBtn.click();
+            }
+        });
+
+        cancelEndBtn.addEventListener('click', closeEndConfirmation);
+        confirmEndBtn.addEventListener('click', () => {
+            closeEndConfirmation();
+            setActiveScreen(endingScreen);
+        });
+        endConfirmModal.addEventListener('click', (event) => {
+            if (event.target === endConfirmModal) {
+                closeEndConfirmation();
             }
         });
 
