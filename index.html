@@ -265,7 +265,14 @@
         }
 
         .input-card {
-            margin: 0 24px calc(40px + env(safe-area-inset-bottom));
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: calc(24px + env(safe-area-inset-bottom));
+            width: calc(100vw - 48px);
+            max-width: 432px;
+            margin: 0;
+            z-index: 20;
             flex-shrink: 0;
         }
 
@@ -297,14 +304,25 @@
             box-shadow: 0 12px 22px rgba(188, 111, 56, 0.24);
         }
 
+        #chatScreen {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .screen.active#chatScreen {
+            display: flex;
+        }
+
         .messages {
             display: flex;
             flex-direction: column;
             gap: 16px;
+            flex: 1 1 auto;
+            min-height: 0;
             overflow-y: auto;
             padding-right: 4px;
-            margin-bottom: 16px;
-            max-height: calc(100vh - 360px);
+            padding-bottom: calc(76px + 24px + env(safe-area-inset-bottom));
         }
 
         .message {
