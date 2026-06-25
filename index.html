@@ -322,7 +322,7 @@
             min-height: 0;
             overflow-y: auto;
             padding-right: 4px;
-            padding-bottom: calc(76px + 24px + env(safe-area-inset-bottom));
+            padding-bottom: calc(320px + env(safe-area-inset-bottom));
         }
 
         .message {
@@ -362,13 +362,31 @@
         }
 
         .action-buttons {
-            display: grid;
-            gap: 12px;
-            margin-bottom: 14px;
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: calc(24px + 52px + 12px + env(safe-area-inset-bottom));
+            width: calc(100vw - 48px);
+            max-width: 432px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 21;
+            margin: 0;
+            pointer-events: auto;
         }
 
         .action-buttons.visible {
-            display: grid;
+            display: flex;
+        }
+
+        .action-button {
+            width: 100%;
+            padding: 14px 16px;
+            min-height: 52px;
+            border-radius: 999px;
+            font-size: 0.95rem;
+            line-height: 1.35;
         }
 
         .screen h1 {
