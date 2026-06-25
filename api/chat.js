@@ -308,6 +308,8 @@ When you reach the committed action step and offer the four fixed options, appen
 When you reach the final closing step, append the text [SESSION_END] after your visible reply.
 Do not include these markers in what the user sees.`;
 
+const SUPABASE_TABLE = 'session_logs';
+
 function isValidGroup(group) {
   return group === 'ember' || group === 'info';
 }
