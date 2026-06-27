@@ -1,8 +1,6 @@
 # Deployment Guide — Ember Chat App
 
-You're going to get an API key, then deploy this app to Vercel (a free hosting platform). I'll walk you through each step.
-
----
+This app now supports two study arms and logs chat sessions to Supabase.
 
 ## Step 1: Get Your Anthropic (Claude) API Key
 
@@ -20,143 +18,79 @@ This is where you get permission to use Claude's AI.
 
 To avoid surprise costs:
 1. Go to **Plans** in the left menu
-2. Find **"Monthly Budget"** 
+2. Find **"Monthly Budget"**
 3. Set it to something small like $5 (you can change it anytime)
 
----
+## Step 2: Create Supabase for Logging
 
-## Step 2: Create a Vercel Account (One-Time)
+The app saves chat transcripts to Supabase so you can export them later.
 
-Vercel is where your app will live on the internet.
+1. Go to **supabase.com** in your browser
+2. Click **"Start your project"** and sign up or log in
+3. Create a new project with any name you like
+4. In project settings, go to **API** and copy the **Project URL**
+5. In project settings, go to **Database** > **Settings** > **Database Connection**
+   and copy the **Service Role** key
+6. Keep both values secret. The service key must never be sent to the browser.
 
-1. Go to **vercel.com** in your browser
-2. Click **"Sign Up"** in the top right
-3. Choose "Continue with GitHub" (easiest option):
-   - If you don't have GitHub, create a free account at github.com first, then come back here
-   - GitHub will ask permission; click **"Authorize"**
-4. Vercel will ask for your name — enter it and complete signup
-5. You should now see a dashboard with a big **"Create Project"** button
+### Create the logging table in Supabase
 
----
+Use Supabase SQL editor and run:
 
-## Step 3: Deploy This App to Vercel
+```sql
+create table if not exists session_logs (
+  id text primary key,
+  group text not null,
+  pid text,
+  start_time timestamp with time zone,
+  end_time timestamp with time zone,
+  messages jsonb
+);
+```
 
-Now you'll upload your chat app.
+This table stores:
+- `id`: a session identifier
+- `group`: `ember` or `info`
+- `pid`: participant ID from the URL
+- `start_time` and `end_time`
+- `messages`: all chat messages in order
 
-### Option A: Using Vercel's Web Interface (Easiest)
+## Step 3: Deploy to Vercel
 
-1. Make sure your folder has these files:
+1. Go to vercel.com and sign in with GitHub
+2. Add your GitHub repo if you haven't yet
+3. Import the project and deploy it
+4. The app files should include:
    - `index.html`
    - `api/chat.js`
    - `vercel.json`
    - `package.json`
 
-2. Go to your Vercel dashboard
-3. Click **"Add New..."** → **"Project"**
-4. Click **"Import Git Repository"**
-5. Paste this in the URL field:
-   ```
-   https://github.com/username/ember-app
-   ```
-   (Or, if you uploaded it to GitHub, use your GitHub repo URL)
+## Step 4: Add Environment Variables in Vercel
 
-   **If you don't have it on GitHub yet:**
-   - Go to github.com
-   - Click **"New repository"**
-   - Name it `ember-app`
-   - Upload your files there first, then come back to Vercel
+In your Vercel project settings, add these variables exactly:
 
-6. Once Vercel shows your repo, click **"Import"**
-7. Vercel will show configuration options — just click **"Deploy"** (the defaults are fine)
-8. Wait 1-2 minutes for deployment to finish
+- `ANTHROPIC_API_KEY` = your Anthropic key
+- `SUPABASE_URL` = your Supabase project URL
+- `SUPABASE_SERVICE_KEY` = your Supabase service role key
 
-### Option B: Using Terminal (If You're Comfortable)
+After adding them, redeploy the project from the Vercel dashboard.
 
-1. Open Terminal (Mac) or Command Prompt (Windows)
-2. Navigate to your ember-app folder:
-   ```
-   cd /Users/ellielin/Desktop/ember-app
-   ```
-3. Install Vercel's command line tool:
-   ```
-   npm install -g vercel
-   ```
-4. Deploy:
-   ```
-   vercel
-   ```
-5. Follow the prompts and select "Y" for the defaults
+## Step 5: Test the two arms
 
----
+Use these test URLs once the app is deployed:
+- `https://<your-app>.vercel.app/?group=ember&pid=1234`
+- `https://<your-app>.vercel.app/?group=info&pid=1234`
 
-## Step 4: Add Your API Key to Vercel (The Important Bit)
+If `group` is missing or invalid, the app shows a short neutral message and does not start chat.
 
-Once deployment is done, you'll have a URL like `https://ember-app-xyz.vercel.app`.
+## Step 6: Confirm logging
 
-Now tell Vercel where to find your API key:
+To check logged data:
+1. Open your Supabase project
+2. Go to **Table Editor**
+3. Open `session_logs`
 
-1. Go to vercel.com and find your **Ember** project
-2. Click on the project name
-3. Go to the **Settings** tab (top of the page)
-4. On the left, click **"Environment Variables"**
-5. Click **"Add New"**
-6. In the **"Name"** field, type exactly:
-   ```
-   ANTHROPIC_API_KEY
-   ```
-7. In the **"Value"** field, paste your API key (the `sk-ant-...` you saved earlier)
-8. Click **"Add"**
+You should see rows for each session with `group`, `pid`, `start_time`, `end_time`, and `messages`.
 
-Now redeploy so Vercel picks up the new environment variable:
-- Go back to the **Deployments** tab
-- Find the most recent deployment
-- Click the three dots ⋯
-- Click **"Redeploy"**
-- Wait 1-2 minutes
-
----
-
-## Step 5: Test Your App
-
-Once redeployed:
-
-1. Go to your Vercel URL: `https://ember-app-xyz.vercel.app`
-2. Type a message in the chat box
-3. Click **Send** or press Enter
-4. If Ember replies, you're done! 🎉
-
-If it doesn't work:
-- Make sure the API key is added (Step 4)
-- Make sure it's redeployed after adding the key
-- Check your API spending limit at console.anthropic.com hasn't been exceeded
-
----
-
-## Your Final URL
-
-Once deployed, share this URL with your research team or users:
-
-```
-https://ember-app-[your-unique-code].vercel.app
-```
-
-(Vercel will give you the exact URL when deployment finishes.)
-
----
-
-## What Each File Does
-
-- **index.html** — The chat screen users see
-- **api/chat.js** — The invisible backend that talks to Claude; **your API key lives here** (in the environment variable, not in the code itself)
-- **vercel.json** — Configuration so Vercel knows how to run this app
-- **package.json** — Metadata about the project
-
----
-
-## Questions?
-
-- **"Where does my API key live?"** → In Vercel's environment variables, nowhere near the public code
-- **"Is it free?"** → Yes, Vercel is free. Claude API charges small amounts (you set a limit to be safe)
-- **"Can I change the system prompt?"** → Yes, edit `api/chat.js` line by line where it says `const systemPrompt = ...`
-- **"How many people can use it?"** → As many as you want (within your API spending limit)
-
+If you want to download the data later, use the Supabase table export or SQL editor export tools.
