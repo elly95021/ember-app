@@ -578,6 +578,7 @@ export default async function handler(req, res) {
       .replace(committedActionMarker, '')
       .replace(sessionEndMarker, '')
       .trim();
+    const hasSafety = reply.includes('Samaritans free at any time on 116 123');
     const endTime = new Date().toISOString();
     const sessionIdToSave = sessionId || `session-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
     const startTimeToSave = sessionStart || endTime;
@@ -598,7 +599,8 @@ export default async function handler(req, res) {
       reply,
       timestamp: endTime,
       committedAction: hasCommittedAction,
-      sessionEnd: hasSessionEnd
+      sessionEnd: hasSessionEnd,
+      safety: hasSafety
     });
   } catch (error) {
     console.error('Error:', error);
